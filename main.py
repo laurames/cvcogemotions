@@ -32,18 +32,20 @@ class BufferWrapper:
 def main():
     with CV2CameraCapture(1).open() as camera:
         time.sleep(0.5)  # waiting for camera init.
-        img = Image.fromarray(cv2.cvtColor(camera.get_frame(), cv2.COLOR_BGR2RGB))
+        frame = camera.get_frame()
+        img_gray = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+        img_rgb = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         buf = io.BytesIO()
-        plt.imsave(buf, img, format='png')
+        plt.imsave(buf, img_gray, format='png')
         image_data = BufferWrapper(buf.getvalue())
         emotions, rects = FaceAPI().detect(image_data).emotions()
-        draw = ImageDraw.Draw(img)
+        draw = ImageDraw.Draw(img_rgb)
         for rect in rects:
             draw_rect(draw, rect)
         for rect, emotion in zip(rects, emotions):
             draw.text((rect[0][0] + 20, rect[0][1] - 20), emotion, fill='green')
 
-        plt.imshow(img)
+        plt.imshow(img_rgb)
         plt.show()
 
 
