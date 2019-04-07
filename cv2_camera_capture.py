@@ -25,8 +25,8 @@ class CV2CameraCapture:
 
 
 if __name__ == "__main__":
-    with CV2CameraCapture(0).open() as camera:
-        time.sleep(3)
-        img = Image.fromarray(camera.get_frame())
+    with CV2CameraCapture(1).open() as camera:
+        time.sleep(0.5)
+        img = Image.fromarray(cv2.cvtColor(camera.get_frame(), cv2.COLOR_BGR2RGB))
         plt.imshow(img)
         plt.show()

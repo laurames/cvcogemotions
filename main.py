@@ -1,5 +1,7 @@
+import time
+import io
 import tempfile
-from PIL import Image
+from PIL import Image, ImageDraw
 from cognitive_service import FaceAPI
 
 import cv2
@@ -8,21 +10,41 @@ from cv2_camera_capture import CV2CameraCapture
 from matplotlib import pyplot as plt
 
 
+def draw_rect(dc, xy, color='red', width=5):
+    (x1, y1), (x2, y2) = xy
+    offset = 1
+    for i in range(0, width):
+        dc.rectangle(((x1, y1), (x2, y2)), outline=color)
+        x1 -= offset
+        y1 += offset
+        x2 += offset
+        y2 -= offset
+
+
+class BufferWrapper:
+    def __init__(self, buffer):
+        self.buffer = buffer
+
+    def read(self):
+        return self.buffer
+
+
 def main():
-    with CV2CameraCapture(0).open() as camera:
-        cv2.imshow('frame', camera.get_frame())
-        cv2.waitKey(0)
-        # img = Image.fromarray(camera.get_frame())
-        # temp_file = tempfile.NamedTemporaryFile(suffix='.png')
-        # print(temp_file.name)
-        # with open(temp_file.name, 'wb') as f:
-        #     img.save(f)
-        #     img_reread = Image.open(temp_file)
-        #     plt.imshow(img_reread)
-        #     plt.show()
-        # print(FaceAPI().detect(temp_file.name).emotions())
-        # # temp_file.close()
-        # # temp_file.close()
+    with CV2CameraCapture(1).open() as camera:
+        time.sleep(0.5)  # waiting for camera init.
+        img = Image.fromarray(cv2.cvtColor(camera.get_frame(), cv2.COLOR_BGR2RGB))
+        buf = io.BytesIO()
+        plt.imsave(buf, img, format='png')
+        image_data = BufferWrapper(buf.getvalue())
+        emotions, rects = FaceAPI().detect(image_data).emotions()
+        draw = ImageDraw.Draw(img)
+        for rect in rects:
+            draw_rect(draw, rect)
+        for rect, emotion in zip(rects, emotions):
+            draw.text((rect[0][0] + 20, rect[0][1] - 20), emotion, fill='green')
+
+        plt.imshow(img)
+        plt.show()
 
 
 if __name__ == '__main__':
