@@ -1,6 +1,6 @@
-import time
 import io
-import tempfile
+import time
+import numpy as np
 from PIL import Image, ImageDraw
 from cognitive_service import FaceAPI
 
@@ -30,23 +30,30 @@ class BufferWrapper:
 
 
 def main():
-    with CV2CameraCapture(1).open() as camera:
-        time.sleep(0.5)  # waiting for camera init.
-        frame = camera.get_frame()
-        img_gray = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-        img_rgb = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        buf = io.BytesIO()
-        plt.imsave(buf, img_gray, format='png')
-        image_data = BufferWrapper(buf.getvalue())
-        emotions, rects = FaceAPI().detect(image_data).emotions()
-        draw = ImageDraw.Draw(img_rgb)
-        for rect in rects:
-            draw_rect(draw, rect)
-        for rect, emotion in zip(rects, emotions):
-            draw.text((rect[0][0] + 20, rect[0][1] - 20), emotion, fill='green')
+    try:
+        with CV2CameraCapture(1).open() as camera:
+            time.sleep(0.5)  # waiting for camera init.
+            while True:
+                frame = camera.get_frame()
+                cv2.imshow('original', frame)
+                img_gray = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+                img_rgb = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                buf = io.BytesIO()
+                plt.imsave(buf, img_gray, format='png')
+                image_data = BufferWrapper(buf.getvalue())
+                emotions, rects = FaceAPI().detect(image_data).emotions()
+                dc = ImageDraw.Draw(img_rgb)
+                for rect in rects:
+                    draw_rect(dc, rect)
+                for rect, emotion in zip(rects, emotions):
+                    dc.text((rect[0][0] + 20, rect[0][1] - 20), emotion, fill='green')
 
-        plt.imshow(img_rgb)
-        plt.show()
+                cv2.imshow('processed', cv2.cvtColor(np.array(img_rgb), cv2.COLOR_RGB2BGR))
+                # plt.imshow(img_rgb)
+                # plt.show()
+                time.sleep(1.0)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
